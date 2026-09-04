@@ -375,6 +375,7 @@
   <div class="card" id="card">
 
     <button class="music-btn" id="music-btn" aria-label="Musique">🔇</button>
+    <div id="yt-audio-player" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;"></div>
 
     <svg width="0" height="0" style="position:absolute">
       <defs>
@@ -429,116 +430,46 @@ Merci d'exister et de me rendre si heureux(se).
 const TARGET_DATE = new Date(2026, 8, 5, 0, 0, 0);
 /* ============================== */
 
-// ====== SYNTHÉTISEUR MUSICAL INTÉGRÉ (Web Audio) ======
-// Mélodie inspirée de "Je t'aimais, je t'aime et je t'aimerais" – Francis Cabrel
+// ====== Musique : "Je t'aimais, je t'aime et je t'aimerai" (Francis Cabrel) ======
+// Jouée via le lecteur officiel YouTube (caché) plutôt que recréée : la mélodie
+// est une œuvre protégée, on ne peut ni la reproduire ni l'imiter nous-mêmes —
+// on se contente de piloter le lecteur YouTube, qui gère les droits.
+const YT_VIDEO_ID = 'SWRRSwCbJsM';
+let ytPlayer = null;
+let ytReady = false;
+let musicWantsPlay = false;
 
-let audioCtx = null;
-let musicNodes = { gain: null, melodyInterval: null, chordInterval: null };
-let isMusicPlaying = false;
-
-// Fréquences
-const NOTES = {
-  C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
-  C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00
-};
-
-// Mélodie : une phrase romantique qui tourne en boucle
-// (simplification du refrain "Je t'aimais, je t'aime et je t'aimerais")
-const MELODY = [
-  { note: 'C4', dur: 0.3 }, { note: 'E4', dur: 0.3 }, { note: 'G4', dur: 0.4 }, { note: 'G4', dur: 0.3 },
-  { note: 'A4', dur: 0.3 }, { note: 'G4', dur: 0.3 }, { note: 'E4', dur: 0.3 }, { note: 'C4', dur: 0.5 },
-  { note: 'C4', dur: 0.3 }, { note: 'E4', dur: 0.3 }, { note: 'G4', dur: 0.4 }, { note: 'A4', dur: 0.3 },
-  { note: 'G4', dur: 0.3 }, { note: 'E4', dur: 0.3 }, { note: 'C4', dur: 0.3 }, { note: 'D4', dur: 0.5 },
-  { note: 'E4', dur: 0.3 }, { note: 'G4', dur: 0.3 }, { note: 'A4', dur: 0.4 }, { note: 'G4', dur: 0.3 },
-  { note: 'E4', dur: 0.3 }, { note: 'C4', dur: 0.3 }, { note: 'D4', dur: 0.3 }, { note: 'E4', dur: 0.5 },
-];
-
-// Accompagnement : arpèges sur Do - Sol - La mineur - Fa
-const CHORDS = [
-  { notes: ['C4','E4','G4'], dur: 0.6 },
-  { notes: ['G3','B3','D4'], dur: 0.6 },
-  { notes: ['A3','C4','E4'], dur: 0.6 },
-  { notes: ['F3','A3','C4'], dur: 0.6 },
-];
-
-let melodyIndex = 0;
-let chordIndex = 0;
-
-function playNote(freq, duration, volume = 0.12, type = 'square') {
-  if (!audioCtx) return;
-  try {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.value = freq;
-    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    osc.start(audioCtx.currentTime);
-    osc.stop(audioCtx.currentTime + duration);
-  } catch(e) { /* silencieux */ }
-}
-
-function playNextMelodyNote() {
-  if (!isMusicPlaying || !audioCtx) return;
-  const entry = MELODY[melodyIndex % MELODY.length];
-  const freq = NOTES[entry.note];
-  if (freq) playNote(freq, entry.dur * 0.9, 0.10, 'square');
-  melodyIndex++;
-}
-
-function playNextChord() {
-  if (!isMusicPlaying || !audioCtx) return;
-  const chord = CHORDS[chordIndex % CHORDS.length];
-  chord.notes.forEach(n => {
-    const freq = NOTES[n];
-    if (freq) playNote(freq, chord.dur * 0.7, 0.05, 'sine');
+function onYouTubeIframeAPIReady(){
+  ytPlayer = new YT.Player('yt-audio-player', {
+    height: '1',
+    width: '1',
+    videoId: YT_VIDEO_ID,
+    playerVars: { autoplay: 0, controls: 0 },
+    events: {
+      onReady: function(){
+        ytReady = true;
+        if(musicWantsPlay) ytPlayer.playVideo();
+      }
+    }
   });
-  chordIndex++;
 }
-
-function stopMusic() {
-  isMusicPlaying = false;
-  if (musicNodes.melodyInterval) clearInterval(musicNodes.melodyInterval);
-  if (musicNodes.chordInterval) clearInterval(musicNodes.chordInterval);
-  musicNodes.melodyInterval = null;
-  musicNodes.chordInterval = null;
-  if (audioCtx && audioCtx.state === 'running') {
-    audioCtx.suspend();
-  }
-  document.getElementById('music-btn').classList.remove('playing');
-  document.getElementById('music-btn').textContent = '🔇';
-}
-
-function startMusic() {
-  if (isMusicPlaying) return;
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
-  isMusicPlaying = true;
-  melodyIndex = 0;
-  chordIndex = 0;
-
-  // Démarrer la mélodie et l'accompagnement
-  playNextMelodyNote();
-  musicNodes.melodyInterval = setInterval(playNextMelodyNote, 300);
-
-  playNextChord();
-  musicNodes.chordInterval = setInterval(playNextChord, 600);
-
-  document.getElementById('music-btn').classList.add('playing');
-  document.getElementById('music-btn').textContent = '🔊';
-}
+(function loadYouTubeAPI(){
+  const s = document.createElement('script');
+  s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+})();
 
 function toggleMusic() {
-  if (isMusicPlaying) {
-    stopMusic();
+  const btn = document.getElementById('music-btn');
+  musicWantsPlay = !musicWantsPlay;
+  if(musicWantsPlay){
+    btn.classList.add('playing');
+    btn.textContent = '🔊';
+    if(ytReady) ytPlayer.playVideo();
   } else {
-    startMusic();
+    btn.classList.remove('playing');
+    btn.textContent = '🔇';
+    if(ytReady) ytPlayer.pauseVideo();
   }
 }
 
