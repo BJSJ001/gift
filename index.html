@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pour Daphka</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --letter: #2b2b2b;
+    --card-bg: #f6efe4;
+    --accent: #c9184a;
+    --accent-deep: #7a0033;
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0; min-height:100%;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background:
+      radial-gradient(circle at 30% 20%, #ff2e86 0%, #8a0038 40%, #23000f 80%, #12000a 100%);
+  }
+  #bg-hearts{
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+  }
+  .bg-heart{
+    position:absolute; bottom:-10%;
+    color: rgba(255,255,255,0.15);
+    font-size: 22px;
+    animation: floatUp linear infinite;
+  }
+  .bg-star{
+    position:absolute;
+    background: #fff;
+    border-radius: 50%;
+    animation: twinkle ease-in-out infinite;
+  }
+  @keyframes floatUp{
+    0%{ transform: translateY(0) rotate(0deg); opacity:0; }
+    10%{ opacity:1; }
+    100%{ transform: translateY(-115vh) rotate(360deg); opacity:0; }
+  }
+  @keyframes twinkle{
+    0%,100%{ opacity: 0.15; transform: scale(0.8); }
+    50%{ opacity: 0.9; transform: scale(1.15); }
+  }
+
+  /* ---- écran "tourne ton téléphone" ---- */
+  #rotate-gate{
+    position:fixed; inset:0; z-index:50;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px;
+    background:
+      radial-gradient(circle at 30% 20%, #ff2e86 0%, #8a0038 40%, #23000f 80%, #12000a 100%);
+    color:#fff; text-align:center; padding:24px;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+  }
+  #rotate-gate.hidden{ opacity:0; visibility:hidden; pointer-events:none; }
+  .rotate-icon{
+    font-size:60px;
+    animation: rotateHint 1.7s ease-in-out infinite;
+  }
+  @keyframes rotateHint{
+    0%,100%{ transform:rotate(0deg); }
+    50%{ transform:rotate(90deg); }
+  }
+  .rotate-text{
+    font-family: 'Dancing Script', cursive;
+    font-size: 2rem;
+    font-weight:700;
+    line-height:1.3;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.4);
+  }
+  .rotate-sub{
+    font-size:0.9rem;
+    opacity:0.8;
+    letter-spacing:0.5px;
+  }
+
+  .wrap{
+    position:relative; z-index:2;
+    min-height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    padding: 24px;
+  }
+
+  .card{
+    position:relative;
+    width: 100%;
+    max-width: 560px;
+    background: linear-gradient(165deg, #fffaf3 0%, var(--card-bg) 55%, #f0e2d1 100%);
+    border: 1px solid rgba(255,255,255,0.7);
+    border-radius: 28px;
+    padding: 28px 26px 22px;
+    box-shadow:
+      0 25px 70px rgba(0,0,0,0.5),
+      0 0 90px rgba(255,45,120,0.18),
+      inset 0 1px 0 rgba(255,255,255,0.6);
+    overflow: hidden;
+    transition: max-width 1s ease;
+  }
+  .card.final{ max-width: 720px; }
+
+  /* ---- Bouton musique flottant ---- */
+  .music-btn {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 20;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(4px);
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+    transition: transform 0.2s, box-shadow 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .music-btn:hover { transform: scale(1.1); }
+  .music-btn.playing {
+    box-shadow: 0 0 25px rgba(255, 45, 120, 0.4);
+    animation: musicPulse 1.5s ease-in-out infinite;
+  }
+  @keyframes musicPulse {
+    0%,100%{ box-shadow: 0 0 15px rgba(255,45,120,0.25); }
+    50%{ box-shadow: 0 0 35px rgba(255,45,120,0.6); }
+  }
+
+  .heading{
+    text-align:center;
+    font-family: 'Dancing Script', cursive;
+    font-weight: 700;
+    font-size: 1.7rem;
+    color: var(--accent-deep);
+    margin: 0 0 14px;
+    opacity: 0;
+    transform: translateY(-6px);
+    animation: headingIn 0.9s ease 0.3s forwards;
+  }
+  @keyframes headingIn{
+    to{ opacity:1; transform: translateY(0); }
+  }
+
+  .content{
+    position:relative;
+    display:flex;
+    align-items:flex-end;
+    gap: 10px;
+    min-height: 300px;
+    transition: min-height 1s ease;
+  }
+  .card.final .content{ min-height: 200px; }
+
+  .message{
+    flex: 0 0 0%;
+    opacity: 0;
+    overflow: hidden;
+    align-self: flex-start;
+    padding-top: 4px;
+    color: var(--letter);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    transition: flex-basis 1s ease, opacity 0.7s ease 0.35s;
+  }
+  .cursor{
+    display:inline-block;
+    width: 2px;
+    background: var(--letter);
+    margin-left: 2px;
+    animation: blink 0.8s steps(1) infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+  .treearea{
+    position:relative;
+    flex: 0 0 100%;
+    display:flex;
+    justify-content:center;
+    align-items:flex-end;
+    transition: flex-basis 1s ease;
+  }
+  .card.final .message{ flex-basis: 62%; opacity: 1; }
+  .card.final .treearea{ flex-basis: 34%; }
+
+  .treebox{
+    position:relative;
+    width: 150px;
+    height: 188px;
+    flex-shrink:0;
+    transform: scale(1.6);
+    transform-origin: bottom center;
+    transition: transform 1s ease;
+    contain: layout paint;
+  }
+  .card.final .treebox{ transform: scale(1); }
+  .treebox svg{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    overflow:visible;
+  }
+
+  .tree-grow{
+    position:absolute; inset:0;
+    transform-origin: bottom center;
+    transform: scale(0.12);
+  }
+
+  .branch{
+    fill:none;
+    stroke:url(#barkGrad);
+    stroke-width:5;
+    stroke-linecap:round;
+    stroke-dasharray:100;
+    stroke-dashoffset:100;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.25));
+    animation: draw 0.8s ease forwards;
+  }
+  @keyframes draw{ to{ stroke-dashoffset:0; } }
+
+  .seed{
+    position:absolute;
+    left:50%; bottom:0;
+    width:14px; height:14px;
+    margin-left:-7px;
+    border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #ff5d7a, #7a0022 80%);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+    opacity:0;
+    animation: seedFall 0.9s cubic-bezier(.34,1.56,.64,1) forwards, seedFade 0.3s ease forwards;
+  }
+  @keyframes seedFall{
+    0%{ transform: translateY(-170px) scale(0.7); opacity:0; }
+    55%{ opacity:1; }
+    75%{ transform: translateY(8px) scale(1.2); }
+    88%{ transform: translateY(-4px) scale(1); }
+    100%{ transform: translateY(0) scale(1); opacity:1; }
+  }
+  @keyframes seedFade{ to{ opacity:0; } }
+
+  .canopy-glow{
+    position:absolute;
+    width: 190px; height: 170px;
+    left: 50%; top: 8px;
+    transform: translateX(-50%);
+    background: radial-gradient(ellipse at center, rgba(255,80,140,0.55) 0%, rgba(255,80,140,0.25) 40%, rgba(255,80,140,0) 72%);
+    filter: blur(6px);
+    opacity: 0;
+    animation: glowIn 1.6s ease forwards;
+    pointer-events: none;
+  }
+  @keyframes glowIn{ to{ opacity:1; } }
+
+  .heart-pt{
+    position:absolute;
+    font-size: 13px;
+    transform-origin: center;
+    opacity: 0;
+    transform: scale(0);
+    animation: bloom 0.5s ease forwards;
+  }
+  @keyframes bloom{ to{ opacity:1; transform: scale(1); } }
+
+  .hearts{
+    transform-origin: bottom center;
+    animation: canopySway 4.2s ease-in-out infinite;
+  }
+  @keyframes canopySway{
+    0%,100%{ transform: rotate(-1.4deg); }
+    50%{ transform: rotate(1.4deg); }
+  }
+
+  .ground-line{
+    border-top: 1px solid #ccb9a3;
+    margin-top: 10px;
+  }
+
+  .petals{
+    position:absolute; inset:0; pointer-events:none; overflow:hidden;
+  }
+  .petal{
+    position:absolute;
+    top:-5%;
+    font-size: 12px;
+    color: #d1495b;
+    animation: fall linear forwards;
+  }
+  @keyframes fall{
+    0%{ transform: translateY(0) translateX(0) rotate(0deg); opacity:1; }
+    100%{ transform: translateY(420px) translateX(-40px) rotate(200deg); opacity:0; }
+  }
+
+  .countdown-label{
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: #7a7a7a;
+    opacity: 0;
+    transition: opacity 0.6s ease 0.6s;
+  }
+  .countdown{
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+    display: flex;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.6s ease 0.8s;
+  }
+  .cbox{
+    flex: 1;
+    text-align: center;
+    background: linear-gradient(160deg, #ffffff, #f6ece0);
+    border-radius: 12px;
+    padding: 8px 4px 7px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .cnum{
+    display:block;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--accent-deep);
+    line-height: 1.1;
+  }
+  .clabel{
+    display:block;
+    font-size: 0.62rem;
+    color: #9a8b7a;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+  .done-msg{
+    width: 100%;
+    text-align:center;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--accent-deep);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ transform: scale(1); }
+    50%{ transform: scale(1.05); }
+  }
+  .card.final .countdown-label{ opacity: 1; }
+  .card.final .countdown{ opacity: 1; }
+
+  .brand{
+    text-align:center;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 10px 0 18px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    position:relative; z-index:2;
+  }
+</style>
+</head>
+<body>
+
+<div id="rotate-gate">
+  <div class="rotate-icon">📱</div>
+  <div class="rotate-text">Tourne ton téléphone</div>
+  <div class="rotate-sub">pour faire pousser ton arbre…</div>
+</div>
+
+<div id="bg-hearts"></div>
+
+<div class="brand">BJSJ DEV</div>
+
+<div class="wrap">
+  <div class="card" id="card">
+
+    <button class="music-btn" id="music-btn" aria-label="Musique">🔇</button>
+
+    <svg width="0" height="0" style="position:absolute">
+      <defs>
+        <linearGradient id="barkGrad" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="#4a2c17"/>
+          <stop offset="100%" stop-color="#8b5a2b"/>
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="heading" id="heading"></div>
+
+    <div class="petals" id="petals"></div>
+
+    <div class="content" id="content">
+      <div class="message" id="message"></div>
+      <div class="treearea">
+        <div class="treebox" id="treebox">
+          <div class="tree-grow" id="treeGrow">
+            <div class="canopy-glow"></div>
+            <svg viewBox="0 0 150 190" preserveAspectRatio="xMidYMax meet">
+              <path class="branch" pathLength="100" data-stagger="0"   d="M75,188 C74,150 76,120 75,95" />
+              <path class="branch" pathLength="100" data-stagger="350" d="M75,150 C60,132 46,120 28,105" />
+              <path class="branch" pathLength="100" data-stagger="350" d="M75,150 C90,132 104,120 122,105" />
+              <path class="branch" pathLength="100" data-stagger="600" d="M75,120 C62,100 50,84 34,64" />
+              <path class="branch" pathLength="100" data-stagger="600" d="M75,120 C88,100 100,84 116,64" />
+              <path class="branch" pathLength="100" data-stagger="850" d="M75,95 C71,76 73,55 75,32" />
+            </svg>
+            <div class="hearts" id="hearts"></div>
+          </div>
+          <div class="seed" id="seed"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ground-line"></div>
+    <div class="countdown-label">En attendant ton anniversaire...</div>
+    <div class="countdown" id="countdown"></div>
+  </div>
+</div>
+
+<script>
+/* ====== À PERSONNALISER ====== */
+const PRENOM = "Daphka";
+const MESSAGE = `Pour la personne qui compte le plus pour moi : ❤️
+
+Il ne reste presque plus de temps avant ton anniversaire, et je n'attends qu'une chose : pouvoir te fêter, te serrer dans mes bras et te couvrir de bisous et de surprises.
+
+Merci d'exister et de me rendre si heureux(se).
+
+— Je t'aime !`;
+const TARGET_DATE = new Date(2026, 8, 5, 0, 0, 0);
+/* ============================== */
+
+// ====== SYNTHÉTISEUR MUSICAL INTÉGRÉ (Web Audio) ======
+// Mélodie inspirée de "Je t'aimais, je t'aime et je t'aimerais" – Francis Cabrel
+
+let audioCtx = null;
+let musicNodes = { gain: null, melodyInterval: null, chordInterval: null };
+let isMusicPlaying = false;
+
+// Fréquences
+const NOTES = {
+  C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
+  C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00
+};
+
+// Mélodie : une phrase romantique qui tourne en boucle
+// (simplification du refrain "Je t'aimais, je t'aime et je t'aimerais")
+const MELODY = [
+  { note: 'C4', dur: 0.3 }, { note: 'E4', dur: 0.3 }, { note: 'G4', dur: 0.4 }, { note: 'G4', dur: 0.3 },
+  { note: 'A4', dur: 0.3 }, { note: 'G4', dur: 0.3 }, { note: 'E4', dur: 0.3 }, { note: 'C4', dur: 0.5 },
+  { note: 'C4', dur: 0.3 }, { note: 'E4', dur: 0.3 }, { note: 'G4', dur: 0.4 }, { note: 'A4', dur: 0.3 },
+  { note: 'G4', dur: 0.3 }, { note: 'E4', dur: 0.3 }, { note: 'C4', dur: 0.3 }, { note: 'D4', dur: 0.5 },
+  { note: 'E4', dur: 0.3 }, { note: 'G4', dur: 0.3 }, { note: 'A4', dur: 0.4 }, { note: 'G4', dur: 0.3 },
+  { note: 'E4', dur: 0.3 }, { note: 'C4', dur: 0.3 }, { note: 'D4', dur: 0.3 }, { note: 'E4', dur: 0.5 },
+];
+
+// Accompagnement : arpèges sur Do - Sol - La mineur - Fa
+const CHORDS = [
+  { notes: ['C4','E4','G4'], dur: 0.6 },
+  { notes: ['G3','B3','D4'], dur: 0.6 },
+  { notes: ['A3','C4','E4'], dur: 0.6 },
+  { notes: ['F3','A3','C4'], dur: 0.6 },
+];
+
+let melodyIndex = 0;
+let chordIndex = 0;
+
+function playNote(freq, duration, volume = 0.12, type = 'square') {
+  if (!audioCtx) return;
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime);
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e) { /* silencieux */ }
+}
+
+function playNextMelodyNote() {
+  if (!isMusicPlaying || !audioCtx) return;
+  const entry = MELODY[melodyIndex % MELODY.length];
+  const freq = NOTES[entry.note];
+  if (freq) playNote(freq, entry.dur * 0.9, 0.10, 'square');
+  melodyIndex++;
+}
+
+function playNextChord() {
+  if (!isMusicPlaying || !audioCtx) return;
+  const chord = CHORDS[chordIndex % CHORDS.length];
+  chord.notes.forEach(n => {
+    const freq = NOTES[n];
+    if (freq) playNote(freq, chord.dur * 0.7, 0.05, 'sine');
+  });
+  chordIndex++;
+}
+
+function stopMusic() {
+  isMusicPlaying = false;
+  if (musicNodes.melodyInterval) clearInterval(musicNodes.melodyInterval);
+  if (musicNodes.chordInterval) clearInterval(musicNodes.chordInterval);
+  musicNodes.melodyInterval = null;
+  musicNodes.chordInterval = null;
+  if (audioCtx && audioCtx.state === 'running') {
+    audioCtx.suspend();
+  }
+  document.getElementById('music-btn').classList.remove('playing');
+  document.getElementById('music-btn').textContent = '🔇';
+}
+
+function startMusic() {
+  if (isMusicPlaying) return;
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  isMusicPlaying = true;
+  melodyIndex = 0;
+  chordIndex = 0;
+
+  // Démarrer la mélodie et l'accompagnement
+  playNextMelodyNote();
+  musicNodes.melodyInterval = setInterval(playNextMelodyNote, 300);
+
+  playNextChord();
+  musicNodes.chordInterval = setInterval(playNextChord, 600);
+
+  document.getElementById('music-btn').classList.add('playing');
+  document.getElementById('music-btn').textContent = '🔊';
+}
+
+function toggleMusic() {
+  if (isMusicPlaying) {
+    stopMusic();
+  } else {
+    startMusic();
+  }
+}
+
+// Bouton musique
+document.getElementById('music-btn').addEventListener('click', toggleMusic);
+
+// ====== Compte à rebours ======
+function updateCountdown(){
+  const cdEl = document.getElementById('countdown');
+  if(!cdEl) return;
+  const diff = TARGET_DATE - new Date();
+  if(diff <= 0){
+    cdEl.innerHTML = `<div class="done-msg">Joyeux anniversaire ${PRENOM} ! 🎉</div>`;
+    return;
+  }
+  const s = Math.floor(diff/1000);
+  const days = Math.floor(s/86400);
+  const hours = Math.floor((s%86400)/3600);
+  const mins = Math.floor((s%3600)/60);
+  const secs = s%60;
+  cdEl.innerHTML = `
+    <div class="cbox"><span class="cnum">${days}</span><span class="clabel">jours</span></div>
+    <div class="cbox"><span class="cnum">${hours}</span><span class="clabel">heures</span></div>
+    <div class="cbox"><span class="cnum">${mins}</span><span class="clabel">min</span></div>
+    <div class="cbox"><span class="cnum">${secs}</span><span class="clabel">sec</span></div>
+  `;
+}
+
+// ====== Message dactylographié ======
+let typed = 0;
+function typeWriter(){
+  const msgEl = document.getElementById('message');
+  if(!msgEl) return;
+  if(typed <= MESSAGE.length){
+    msgEl.innerHTML = MESSAGE.slice(0, typed).replace(/\n/g,'<br>') + '<span class="cursor">&nbsp;</span>';
+    typed++;
+    setTimeout(typeWriter, 28);
+  }
+}
+
+let revealed = false;
+function revealMessage(){
+  if(revealed) return;
+  revealed = true;
+  const card = document.getElementById('card');
+  if(card) card.classList.add('final');
+  document.getElementById('heading').textContent = 'Pour toi, ' + PRENOM;
+  typeWriter();
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+}
+
+// ====== Écran "tourne ton téléphone" ======
+const gateEl = document.getElementById('rotate-gate');
+function isTouchDevice(){
+  return window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+}
+function isLandscape(){
+  return window.matchMedia && window.matchMedia('(orientation: landscape)').matches;
+}
+
+let sequenceStarted = false;
+function startSequence(){
+  if(sequenceStarted) return;
+  sequenceStarted = true;
+  gateEl.classList.add('hidden');
+
+  // Tenter de lancer la musique automatiquement
+  try { startMusic(); } catch(e) { /* silencieux */ }
+
+  runAnimation();
+}
+
+if(isTouchDevice() && !isLandscape()){
+  const mq = window.matchMedia('(orientation: landscape)');
+  function onOrientationChange(){
+    if(isLandscape()){
+      if(mq.removeEventListener) mq.removeEventListener('change', onOrientationChange);
+      else mq.removeListener(onOrientationChange);
+      window.removeEventListener('orientationchange', onOrientationChange);
+      startSequence();
+    }
+  }
+  if(mq.addEventListener) mq.addEventListener('change', onOrientationChange);
+  else mq.addListener(onOrientationChange);
+  window.addEventListener('orientationchange', onOrientationChange);
+} else {
+  gateEl.style.display = 'none';
+  startSequence();
+}
+
+// ====== Animation de l'arbre ======
+function runAnimation(){
+  const safetyTimer = setTimeout(revealMessage, 6000);
+
+  try {
+    document.getElementById('heading').textContent = 'Pour toi, ' + PRENOM;
+
+    const SEED_START    = 200;
+    const SEED_DURATION = 900;
+    const SEED_FADE_DURATION = 300;
+    const BRANCH_START  = SEED_START + SEED_DURATION + 50;
+    const BRANCH_DURATION = 800;
+    const branchEls = Array.from(document.querySelectorAll('.branch'));
+    const maxStagger = branchEls.reduce((max,b)=>Math.max(max, parseInt(b.dataset.stagger,10) || 0), 0);
+    const BRANCH_END = BRANCH_START + maxStagger + BRANCH_DURATION;
+    const BLOOM_START = BRANCH_END + 150;
+    const BLOOM_SPAN   = 1400;
+    const FINAL_DELAY  = BLOOM_START + BLOOM_SPAN + 500;
+
+    const seedEl = document.getElementById('seed');
+    seedEl.style.animationDuration = (SEED_DURATION/1000) + 's, ' + (SEED_FADE_DURATION/1000) + 's';
+    seedEl.style.animationDelay = (SEED_START/1000) + 's, ' + ((SEED_START+SEED_DURATION)/1000) + 's';
+
+    const treeGrowEl = document.getElementById('treeGrow');
+    treeGrowEl.style.animation = `growTree ${(BRANCH_END-BRANCH_START)/1000}s cubic-bezier(.22,.8,.32,1) ${BRANCH_START/1000}s forwards`;
+    const growStyleTag = document.createElement('style');
+    growStyleTag.textContent = '@keyframes growTree{ to{ transform: scale(1); } }';
+    document.head.appendChild(growStyleTag);
+
+    branchEls.forEach(b=>{
+      const stagger = parseInt(b.dataset.stagger, 10) || 0;
+      b.style.animationDuration = (BRANCH_DURATION/1000) + 's';
+      b.style.animationDelay = ((BRANCH_START + stagger)/1000) + 's';
+    });
+
+    const glowEl = document.querySelector('.canopy-glow');
+    if(glowEl) glowEl.style.animationDelay = (BLOOM_START/1000) + 's';
+
+    const bgHearts = document.getElementById('bg-hearts');
+    const heartChars = ['❤','💕','💖','♥'];
+    const bgFragment = document.createDocumentFragment();
+    for(let n=0;n<22;n++){
+      const h = document.createElement('div');
+      h.className = 'bg-heart';
+      h.textContent = heartChars[Math.floor(Math.random()*heartChars.length)];
+      h.style.left = Math.random()*100 + 'vw';
+      h.style.fontSize = (14 + Math.random()*20) + 'px';
+      h.style.animationDuration = (8 + Math.random()*10) + 's';
+      h.style.animationDelay = (Math.random()*10) + 's';
+      bgFragment.appendChild(h);
+    }
+    for(let n=0;n<40;n++){
+      const st = document.createElement('div');
+      st.className = 'bg-star';
+      const size = 1 + Math.random()*2;
+      st.style.width = size + 'px';
+      st.style.height = size + 'px';
+      st.style.left = Math.random()*100 + 'vw';
+      st.style.top = Math.random()*100 + 'vh';
+      st.style.animationDuration = (2 + Math.random()*3) + 's';
+      st.style.animationDelay = (Math.random()*4) + 's';
+      bgFragment.appendChild(st);
+    }
+    bgHearts.appendChild(bgFragment);
+
+    const heartsWrap = document.getElementById('hearts');
+    const treeColors = ['#8b0000','#a4133c','#c9184a','#e63946','#e63946','#ff4d6d','#ff4d6d','#ff8fa3','#ff8fa3','#ffccd5','#fff0f3'];
+    const N = 350;
+    const CX = 75, CY = 78, SCALE = 5.4;
+    const heartsFragment = document.createDocumentFragment();
+    for(let k=0;k<N;k++){
+      const t = Math.random()*Math.PI*2;
+      const r = 0.35 + Math.random()*0.65;
+      const x = 16 * Math.pow(Math.sin(t),3) * r;
+      const y = -(13*Math.cos(t) - 5*Math.cos(2*t) - 2*Math.cos(3*t) - Math.cos(4*t)) * r;
+      const px = CX + x*SCALE + (Math.random()*7-3.5);
+      const py = CY + y*SCALE + (Math.random()*7-3.5);
+      const color = treeColors[Math.floor(Math.random()*treeColors.length)];
+
+      const pt = document.createElement('div');
+      pt.className = 'heart-pt';
+      pt.textContent = '♥';
+      pt.style.left = px + 'px';
+      pt.style.top = py + 'px';
+      pt.style.color = color;
+      pt.style.fontSize = (9 + Math.random()*11) + 'px';
+      pt.style.textShadow = `0 0 6px ${color}99, 0 1px 1px rgba(0,0,0,0.25)`;
+      const delay = (BLOOM_START + Math.random()*BLOOM_SPAN) / 1000;
+      pt.style.animationDelay = delay + 's';
+      heartsFragment.appendChild(pt);
+    }
+    heartsWrap.appendChild(heartsFragment);
+
+    const petalsWrap = document.getElementById('petals');
+    function spawnPetal(){
+      if(petalsWrap.children.length >= 14) return;
+      const p = document.createElement('div');
+      p.className = 'petal';
+      p.textContent = Math.random() > 0.5 ? '♥' : '❀';
+      p.style.left = Math.random()*100 + '%';
+      const duration = 3 + Math.random()*3;
+      p.style.animationDuration = duration + 's';
+      petalsWrap.appendChild(p);
+      setTimeout(()=>p.remove(), duration*1000 + 200);
+    }
+
+    setTimeout(()=>{
+      clearTimeout(safetyTimer);
+      revealMessage();
+      setInterval(spawnPetal, 400);
+    }, FINAL_DELAY);
+
+  } catch(err){
+    console.error('Animation interrompue :', err);
+    clearTimeout(safetyTimer);
+    revealMessage();
+  }
+}
+</script>
+
+</body>
+</html>
